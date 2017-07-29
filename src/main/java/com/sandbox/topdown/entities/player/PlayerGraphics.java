@@ -55,8 +55,8 @@ public class PlayerGraphics implements RenderComponent<PlayerEntity> {
 
     @Override
     public void render(Universe container, PlayerEntity entity, Graphics g) {
-        float x = entity.x;
-        float y = entity.y;
+        float x = entity.pos.x;
+        float y = entity.pos.y;
         int w = texture.getWidth();
         int h = texture.getHeight();
 
@@ -74,8 +74,8 @@ public class PlayerGraphics implements RenderComponent<PlayerEntity> {
 
     private void renderArm(GameEntity entity, float angle) {
         int dist = texture.getWidth() / 2 + 3;
-        float armX = entity.x + MathUtil.translateX(dist, entity.direction + angle);
-        float armY = entity.y + MathUtil.translateY(dist, entity.direction + angle);
+        float armX = entity.pos.x + MathUtil.translateX(dist, entity.direction + angle);
+        float armY = entity.pos.y + MathUtil.translateY(dist, entity.direction + angle);
 
         this.shapeRenderer.circle(armX, armY, 8);
     }
@@ -83,8 +83,8 @@ public class PlayerGraphics implements RenderComponent<PlayerEntity> {
     private void renderStats(GameEntity entity) {
         font.draw(batch, "FPS = " + Gdx.graphics.getFramesPerSecond(), 5, 55);
         font.draw(batch, "Delta = " + Gdx.graphics.getDeltaTime(), 5, 45);
-        font.draw(batch, "Player X = " + entity.x, 5, 35);
-        font.draw(batch, "Player Y = " + entity.y, 5, 25);
+        font.draw(batch, "Player X = " + entity.pos.x, 5, 35);
+        font.draw(batch, "Player Y = " + entity.pos.y, 5, 25);
         font.draw(batch, "Player Direction = " + entity.direction, 5, 15);
 
     }

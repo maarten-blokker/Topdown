@@ -38,7 +38,7 @@ public class BoxPhysics implements Component {
         // We set our body to dynamic, for something like ground which doesn't move we would set it to StaticBody
         bodyDef.type = BodyType.DynamicBody;
         // Set our body's starting position in the world
-        bodyDef.position.set(entity.x + width / 2, entity.y + width / 2);
+        bodyDef.position.set(entity.pos.x + width / 2, entity.pos.y + width / 2);
 
         // Create our body in the world using our body definition
         this.body = world.createBody(bodyDef);
@@ -66,8 +66,8 @@ public class BoxPhysics implements Component {
     @Override
     public void update(Universe universe, GameEntity entity, int delta) {
         Vector2 pos = this.body.getPosition();
-        entity.x = pos.x;
-        entity.y = pos.y;
+        entity.pos.x = pos.x;
+        entity.pos.y = pos.y;
         entity.direction = MathUtil.radiansToDegrees(this.body.getAngle());
     }
 

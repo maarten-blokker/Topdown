@@ -32,7 +32,7 @@ public class PlayerControls implements Component<PlayerEntity> {
     public void update(Universe container, PlayerEntity entity, int delta) {
         Vector3 mouse = new Vector3();
         cam.unproject(mouse.set(Gdx.input.getX(), Gdx.input.getY(), 0));
-        entity.direction = MathUtil.directionToPoint(entity.x, entity.y, mouse.x, mouse.y);
+        entity.direction = MathUtil.directionToPoint(entity.pos.x, entity.pos.y, mouse.x, mouse.y);
 
         updateMovement(entity);
         updateFists(entity);
@@ -63,8 +63,8 @@ public class PlayerControls implements Component<PlayerEntity> {
         float targetDirection = MathUtil.directionToPoint(0, 0, dstX, dstY);
         float targetDistance = (dstX == 0 && dstY == 0) ? 0 : speed;
 
-        entity.x = entity.x + MathUtil.translateX(targetDistance, targetDirection);
-        entity.y = entity.y + MathUtil.translateY(targetDistance, targetDirection);
+        entity.pos.x = entity.pos.x + MathUtil.translateX(targetDistance, targetDirection);
+        entity.pos.y = entity.pos.y + MathUtil.translateY(targetDistance, targetDirection);
 
     }
 

@@ -44,7 +44,7 @@ public class BoxGraphics implements RenderComponent {
         shapeRenderer.identity();
         shapeRenderer.setColor(1, 0, 0, 1);
         shapeRenderer.rotate(width/2, height/2, 1, entity.direction);
-        shapeRenderer.rect(entity.x, entity.y, width, height);
+        shapeRenderer.rect(entity.pos.x, entity.pos.y, width, height);
         shapeRenderer.end();
     }
 

@@ -9,26 +9,11 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
-import com.sandbox.topdown.framework.GameEntity;
 import com.sandbox.topdown.framework.Universe;
 import com.sandbox.topdown.framework.impl.DefaultUniverse;
-import com.sandbox.topdown.entities.box.BoxGraphics;
-import com.sandbox.topdown.entities.player.PlayerControls;
-import com.sandbox.topdown.entities.player.PlayerEntity;
-import com.sandbox.topdown.entities.player.PlayerGraphics;
 import com.sandbox.topdown.network.client.GameClient;
-import com.sandbox.topdown.network.packet.Packet;
-import com.sandbox.topdown.network.packet.UpdatePositionCommand;
-import com.sandbox.topdown.network.packet.UpdateSessionCommand;
-import com.sandbox.topdown.network.packet.WelcomePacket;
-import com.sandbox.topdown.network.packet.event.PositionEvent;
-import com.sandbox.topdown.network.packet.event.SessionEvent;
-import java.net.InetSocketAddress;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,65 +39,65 @@ public class GameListener extends ApplicationAdapter {
     }
 
     private void loadEntities() {
-        PlayerEntity player = new PlayerEntity(cam);
-        player.addComponent(new PlayerControls(cam));
-        player.x = 300;
-        player.y = 300;
-
-        GameEntity box = new GameEntity();
-        box.addComponent(new BoxGraphics(64, 64, cam));
-        box.x = 400;
-        box.y = 300;
-
-        universe.getEntities().add(player);
-        universe.getEntities().add(box);
-
-        joinGame(player);
+//        PlayerEntity player = new PlayerEntity(cam);
+//        player.addComponent(new PlayerControls(cam));
+//        player.x = 300;
+//        player.y = 300;
+//
+//        GameEntity box = new GameEntity();
+//        box.addComponent(new BoxGraphics(64, 64, cam));
+//        box.x = 400;
+//        box.y = 300;
+//
+//        universe.getEntities().add(player);
+//        universe.getEntities().add(box);
+//
+//        joinGame(player);
     }
-
-    private void joinGame(GameEntity player) {
-
-        Map<String, GameEntity> remotePlayers = new HashMap<>();
-        this.client = new GameClient();
-        this.client.addPacketListener((packet) -> {
-            switch (packet.getId()) {
-                case Packet.ID_EVENT_SESSION:
-                    SessionEvent sessEvt = (SessionEvent) packet;
-                    String sessionId = sessEvt.getSession().getId();
-                    if (sessEvt.getType() == SessionEvent.TYPE_CREATED) {
-                        GameEntity entity = new PlayerEntity(cam);
-                        Gdx.app.postRunnable(() -> {
-                            entity.getComponents().forEach((c) -> c.init(universe, entity));
-                            universe.getEntities().add(entity);
-                        });
-
-                        remotePlayers.put(sessionId, entity);
-                    } else if (sessEvt.getType() == SessionEvent.TYPE_DELETED) {
-                        GameEntity entity = remotePlayers.remove(sessionId);
-                        if (entity != null) {
-                            universe.getEntities().add(entity);
-                        }
-                    }
-                    break;
-                case Packet.ID_EVENT_POSITION:
-                    PositionEvent posEvt = (PositionEvent) packet;
-                    GameEntity entity = remotePlayers.get(posEvt.getSessionId());
-                    entity.x = posEvt.getX();
-                    entity.y = posEvt.getY();
-                    entity.direction = posEvt.getDirection();
-                    break;
-                case Packet.ID_JOIN:
-                    LOG.info("Server: " + ((WelcomePacket) packet).getMessage());
-                    break;
-            }
-        });
-        client.connect(new InetSocketAddress("localhost", 9000));
-        client.send(new UpdateSessionCommand("Terraego"));
-
-        executor.scheduleAtFixedRate(() -> {
-            this.client.send(new UpdatePositionCommand(player.x, player.y, player.direction));
-        }, 10, 10, TimeUnit.MILLISECONDS);
-    }
+//
+//    private void joinGame(GameEntity player) {
+//
+//        Map<String, GameEntity> remotePlayers = new HashMap<>();
+//        this.client = new GameClient();
+//        this.client.addPacketListener((packet) -> {
+//            switch (packet.getId()) {
+//                case Packet.ID_EVENT_SESSION:
+//                    SessionEvent sessEvt = (SessionEvent) packet;
+//                    String sessionId = sessEvt.getSession().getId();
+//                    if (sessEvt.getType() == SessionEvent.TYPE_CREATED) {
+//                        GameEntity entity = new PlayerEntity(cam);
+//                        Gdx.app.postRunnable(() -> {
+//                            entity.getComponents().forEach((c) -> c.init(universe, entity));
+//                            universe.getEntities().add(entity);
+//                        });
+//
+//                        remotePlayers.put(sessionId, entity);
+//                    } else if (sessEvt.getType() == SessionEvent.TYPE_DELETED) {
+//                        GameEntity entity = remotePlayers.remove(sessionId);
+//                        if (entity != null) {
+//                            universe.getEntities().add(entity);
+//                        }
+//                    }
+//                    break;
+//                case Packet.ID_EVENT_POSITION:
+//                    PositionEvent posEvt = (PositionEvent) packet;
+//                    GameEntity entity = remotePlayers.get(posEvt.getSessionId());
+//                    entity.x = posEvt.getX();
+//                    entity.y = posEvt.getY();
+//                    entity.direction = posEvt.getDirection();
+//                    break;
+//                case Packet.ID_JOIN:
+//                    LOG.info("Server: " + ((WelcomePacket) packet).getMessage());
+//                    break;
+//            }
+//        });
+//        client.connect(new InetSocketAddress("localhost", 9000));
+//        client.send(new UpdateSessionCommand("Terraego"));
+//
+//        executor.scheduleAtFixedRate(() -> {
+//            this.client.send(new UpdatePositionCommand(player.x, player.y, player.direction));
+//        }, 10, 10, TimeUnit.MILLISECONDS);
+//    }
 
     @Override
     public void create() {

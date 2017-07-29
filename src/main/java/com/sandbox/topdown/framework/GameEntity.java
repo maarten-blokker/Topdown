@@ -1,5 +1,6 @@
 package com.sandbox.topdown.framework;
 
+import com.badlogic.gdx.math.Vector2;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -10,8 +11,7 @@ import java.util.List;
  */
 public class GameEntity {
 
-    public float x;
-    public float y;
+    public Vector2 pos = new Vector2();
     public float direction;
 
     private final List<Component> components = new ArrayList<>();

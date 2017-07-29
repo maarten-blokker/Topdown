@@ -1,9 +1,8 @@
 package com.sandbox.topdown.network;
 
-import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.pool.KryoPool;
-import com.sandbox.topdown.network.packet.Packet;
+import com.sandbox.topdown.prediction.underscored.packet.Packet;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;

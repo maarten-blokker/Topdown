@@ -40,7 +40,7 @@ public class PlayerPhysics implements Component {
         // We set our body to dynamic, for something like ground which doesn't move we would set it to StaticBody
         bodyDef.type = BodyDef.BodyType.DynamicBody;
         // Set our body's starting position in the world
-        bodyDef.position.set(entity.x, entity.y);
+        bodyDef.position.set(entity.pos.x, entity.pos.y);
 
         // Create our body in the world using our body definition
         this.body = world.createBody(bodyDef);
@@ -86,9 +86,9 @@ public class PlayerPhysics implements Component {
         }
 
 //        if (Gdx.input.isKeyPressed(Input.Keys.W)) {
-//            entity.y += speed;
+//            entity.pos.y += speed;
 //        } else if (Gdx.input.isKeyPressed(Input.Keys.S)) {
-//            entity.y -= speed;
+//            entity.pos.y -= speed;
 //        }
 //
 //        if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
@@ -96,8 +96,8 @@ public class PlayerPhysics implements Component {
 //        } else if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
 //            entity.direction -= speed;
 //        }
-        entity.x = pos.x;
-        entity.y = pos.y;
+        entity.pos.x = pos.x;
+        entity.pos.y = pos.y;
         entity.direction = MathUtil.radiansToDegrees(this.body.getAngle());
 
     }
