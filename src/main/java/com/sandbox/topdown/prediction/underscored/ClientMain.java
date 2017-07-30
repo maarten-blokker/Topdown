@@ -6,19 +6,20 @@ import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL30;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import static com.sandbox.topdown.Game.VIEW_HEIGHT;
 import static com.sandbox.topdown.Game.VIEW_WIDTH;
 import java.io.IOException;
-import java.util.List;
 import javafx.application.Application;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -85,7 +86,10 @@ public class ClientMain extends Application {
     static class ClientListener implements ApplicationListener {
 
         static ClientListener listener = new ClientListener();
+        private SpriteBatch batch;
         private ShapeRenderer shapeRenderer;
+        private FreeTypeFontGenerator generator;
+        private BitmapFont font;
         public GameCore game;
 
         public static ClientListener getInstance() {
@@ -97,9 +101,15 @@ public class ClientMain extends Application {
 
         @Override
         public void create() {
+            this.batch = new SpriteBatch();
             this.shapeRenderer = new ShapeRenderer();
             this.game = new GameCore(null);
             this.game.update();
+
+            FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+            parameter.size = 10;
+            this.generator = new FreeTypeFontGenerator(Gdx.files.classpath("assets/fonts/Prototype.ttf"));
+            this.font = generator.generateFont(parameter);
         }
 
         @Override
@@ -110,6 +120,14 @@ public class ClientMain extends Application {
         public void render() {
             Gdx.gl.glClearColor(0, 0, 0, 0);
             Gdx.gl.glClear(GL30.GL_COLOR_BUFFER_BIT);
+
+            batch.begin();
+            if (game.self != null && game.self.state != null) {
+
+                font.draw(batch, "Ping = " + game.net_ping, 5, 40);
+                font.draw(batch, "Local time = " + game.local_time, 5, 30);
+                font.draw(batch, "State = " + game.self.state.name(), 5, 20);
+            }
 
             shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
             shapeRenderer.identity();
@@ -124,6 +142,7 @@ public class ClientMain extends Application {
                 renderCircle(game.other.pos, 16, game.other.color);
             }
 
+            batch.end();
             shapeRenderer.end();
         }
 
@@ -146,6 +165,7 @@ public class ClientMain extends Application {
 
         @Override
         public void dispose() {
+            this.generator.dispose();
         }
 
     }

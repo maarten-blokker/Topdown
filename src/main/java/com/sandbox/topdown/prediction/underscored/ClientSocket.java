@@ -1,10 +1,7 @@
 package com.sandbox.topdown.prediction.underscored;
 
-import com.sandbox.topdown.framework.event.EventBus;
 import com.sandbox.topdown.network.KryoDecodingHandler;
 import com.sandbox.topdown.network.KryoEncodingHandler;
-import com.sandbox.topdown.network.client.GameClient;
-import com.sandbox.topdown.network.client.GameClientHandler;
 import com.sandbox.topdown.prediction.underscored.packet.Packet;
 import com.sandbox.topdown.prediction.underscored.packet.PingPacket;
 import com.sandbox.topdown.prediction.underscored.packet.ServerPacket;

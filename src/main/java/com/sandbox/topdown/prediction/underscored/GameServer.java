@@ -48,6 +48,8 @@ public class GameServer extends GameInstance {
                 1
         );
 
+        LOG.info("[{}] Creating game {}", player.userid, thegame.id);
+
         games.put(thegame.id, thegame);
 
         //Create a new game core instance, this actually runs the
@@ -64,7 +66,7 @@ public class GameServer extends GameInstance {
     }
 
     public void findGame(PlayerClient player) {
-        LOG.info("[{}] Looking for a game. We have: {}", player.userid, this.games.size());
+        LOG.info("[{}] Looking for a game. We have: {} games", player.userid, this.games.size());
 
         //so there are games active,
         //lets see if one needs another player
@@ -78,6 +80,7 @@ public class GameServer extends GameInstance {
                     //someone wants us to join!
                     joined_a_game.set(true);
 
+                    LOG.info("[{}] Joining game: {}", player.userid, game_instance.id);
                     //increase the player count and store
                     //the player as the client of this game
                     game_instance.player_client = player;
@@ -107,6 +110,8 @@ public class GameServer extends GameInstance {
                 ServerPacket.MessageType.JOINED,
                 game.player_host.userid
         ));
+        
+        game.player_client.game = game;
 
         //now we tell both that the game is ready to start
         //clients will reset their positions in this case.
@@ -124,6 +129,8 @@ public class GameServer extends GameInstance {
             LOG.debug("Trying to end non existing game: {}", gameid);
         }
 
+        LOG.info("[{}] is ending game [{}]", userid, gameid);
+
         //stop the game updates immediate
         thegame.gamecore.stop_update();
 
@@ -134,7 +141,9 @@ public class GameServer extends GameInstance {
                 //the host left, oh snap. Lets try join another game
                 if (thegame.player_client != null) {
                     //tell them the game is over
+                    LOG.info("[{}] Sending client that game [{}] has ended", thegame.player_client.userid, gameid);
                     thegame.player_client.send(new ServerPacket(local_time, ServerPacket.MessageType.END));
+
                     //now look for/create a new game.
                     this.findGame(thegame.player_client);
                 }
@@ -164,27 +173,25 @@ public class GameServer extends GameInstance {
 
             this.executor.schedule(() -> {
                 PacketHolder holder = messages.removeFirst();
-                _onMessage(holder.client, holder.packet);
+                handleMessage(holder.client, holder.packet);
             }, fake_latency, TimeUnit.MILLISECONDS);
         } else {
-            _onMessage(client, message);
+            handleMessage(client, message);
         }
     }
 
-    private void _onMessage(PlayerClient client, Packet packet) {
+    private void handleMessage(PlayerClient client, Packet packet) {
         if (packet.getType() == Packet.Type.INPUT) {
-            //Input handler will forward this
-            this.onInput(client, (InputPacket) packet);
+            //the client should be in a game, so
+            //we can tell that game to handle the input
+            InputPacket input = (InputPacket) packet;
+            if (client != null && client.game != null && client.game.gamecore != null) {
+
+                LOG.debug("[{}] received input packet {}", client.userid, input.getInputSequence());
+                client.game.gamecore.handle_server_input(client, input.getInput());
+            }
         } else if (packet.getType() == Packet.Type.PING) {
             client.send(packet);
-        }
-    }
-
-    private void onInput(PlayerClient client, InputPacket packet) {
-        //the client should be in a game, so
-        //we can tell that game to handle the input
-        if (client != null && client.game != null && client.game.gamecore != null) {
-            client.game.gamecore.handle_server_input(client, packet.getInput());
         }
     }
 

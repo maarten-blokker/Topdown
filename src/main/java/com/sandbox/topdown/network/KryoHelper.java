@@ -2,13 +2,11 @@ package com.sandbox.topdown.network;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.pool.KryoFactory;
-import com.sandbox.topdown.network.packet.Packet;
-import com.sandbox.topdown.network.packet.UpdatePositionCommand;
-import com.sandbox.topdown.network.packet.UpdateSessionCommand;
-import com.sandbox.topdown.network.packet.WelcomePacket;
-import com.sandbox.topdown.network.packet.event.PositionEvent;
-import com.sandbox.topdown.network.packet.event.ServerEvent;
-import com.sandbox.topdown.network.packet.event.SessionEvent;
+import com.sandbox.topdown.prediction.underscored.packet.Packet;
+import com.sandbox.topdown.prediction.underscored.packet.InputPacket;
+import com.sandbox.topdown.prediction.underscored.packet.PingPacket;
+import com.sandbox.topdown.prediction.underscored.packet.ServerPacket;
+import com.sandbox.topdown.prediction.underscored.packet.ServerUpdatePacket;
 
 /**
  *
@@ -21,13 +19,10 @@ public class KryoHelper {
             Kryo kryo = new Kryo();
 
             kryo.register(Packet.class);
-            kryo.register(UpdatePositionCommand.class);
-            kryo.register(UpdateSessionCommand.class);
-            kryo.register(WelcomePacket.class);
-
-            kryo.register(PositionEvent.class);
-            kryo.register(ServerEvent.class);
-            kryo.register(SessionEvent.class);
+            kryo.register(InputPacket.class);
+            kryo.register(PingPacket.class);
+            kryo.register(ServerPacket.class);
+            kryo.register(ServerUpdatePacket.class);
 
             return kryo;
         };

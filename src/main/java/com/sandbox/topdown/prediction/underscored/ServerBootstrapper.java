@@ -109,6 +109,13 @@ public class ServerBootstrapper {
             }
         }
 
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+            PlayerClient client = ctx.channel().attr(CLIENT_KEY).get();
+            LOG.error("[" + client.userid + "] Caused an expection, closing connection", cause);
+            ctx.channel().close();
+        }
+
     }
 
 }

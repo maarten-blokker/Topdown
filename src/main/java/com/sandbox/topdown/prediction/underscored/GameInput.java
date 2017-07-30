@@ -39,4 +39,9 @@ public class GameInput {
         this.right = right;
     }
 
+    @Override
+    public String toString() {
+        return "GameInput{" + "seq=" + seq + ", up=" + up + ", down=" + down + ", left=" + left + ", right=" + right + '}';
+    }
+
 }

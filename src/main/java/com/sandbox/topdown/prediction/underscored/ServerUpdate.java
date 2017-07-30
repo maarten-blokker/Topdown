@@ -17,7 +17,6 @@ public class ServerUpdate {
     public int clientInputSequence;
     public int hostInputSequence;
     public float time;
-    public float serverTime;
 
     public ServerUpdate() {
     }
