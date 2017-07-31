@@ -30,6 +30,16 @@ import javafx.stage.Stage;
 public class ClientMain extends Application {
 
     public static void main(String[] args) throws IOException {
+        ClientMain.launch(args);
+    }
+
+    @Override
+    public void start(Stage primaryStage) throws Exception {
+        DebugController controller = new DebugController();
+
+        primaryStage.setScene(new Scene(controller.getView()));
+        primaryStage.show();
+
         LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
         config.title = "Topdown (test)";
         config.useGL30 = true;
@@ -37,66 +47,22 @@ public class ClientMain extends Application {
         config.height = VIEW_HEIGHT;
         config.foregroundFPS = 144;
 
-        LwjglApplication application = new LwjglApplication(ClientListener.getInstance(), config);
-
-        ClientMain.launch(args);
-    }
-
-    @Override
-    public void start(Stage primaryStage) throws Exception {
-        CheckBox boxNaive = new CheckBox();
-        CheckBox boxClientSmooth = new CheckBox();
-        boxClientSmooth.setSelected(true);
-        CheckBox boxClientPredict = new CheckBox();
-        boxClientPredict.setSelected(true);
-
-        CheckBox boxServerPos = new CheckBox();
-        CheckBox boxDestPos = new CheckBox();
-
-        boxNaive.selectedProperty().addListener((obs, old, newVal) -> ClientListener.getInstance().game.naive_approach = newVal);
-        boxClientSmooth.selectedProperty().addListener((obs, old, newVal) -> ClientListener.getInstance().game.client_smoothing = newVal);
-        boxClientPredict.selectedProperty().addListener((obs, old, newVal) -> ClientListener.getInstance().game.client_predict = newVal);
-//        boxServerPos.selectedProperty().addListener((obs, old, newVal) -> ClientListener.getInstance().game.naive_approach = newVal);
-//        boxDestPos.selectedProperty().addListener((obs, old, newVal) -> ClientListener.getInstance().game.naive_approach = newVal);
-
-        GridPane root = new GridPane();
-        root.setHgap(5);
-        root.setVgap(5);
-        root.addRow(0, createRow("Naive approach", boxNaive));
-        root.addRow(1, createRow("Client smoothing", boxClientSmooth));
-        root.addRow(2, createRow("Client prediction", boxClientPredict));
-        root.addRow(3, createSpacer(10));
-        root.addRow(4, createRow("Show server position", boxServerPos));
-        root.addRow(5, createRow("Show dest position", boxDestPos));
-
-        primaryStage.setScene(new Scene(root));
-        primaryStage.show();
-    }
-
-    private Node[] createRow(String text, Node component) {
-        return new Node[]{new Label(text), component};
-    }
-
-    private Node createSpacer(int height) {
-        VBox box = new VBox();
-        box.setMinHeight(height);
-        return box;
+        ClientListener listener = new ClientListener(controller);
+        LwjglApplication application = new LwjglApplication(listener, config);
     }
 
     static class ClientListener implements ApplicationListener {
 
-        static ClientListener listener = new ClientListener();
+        private final DebugController controller;
+        
         private SpriteBatch batch;
         private ShapeRenderer shapeRenderer;
         private FreeTypeFontGenerator generator;
         private BitmapFont font;
         public GameCore game;
 
-        public static ClientListener getInstance() {
-            return listener;
-        }
-
-        private ClientListener() {
+        private ClientListener(DebugController controller) {
+            this.controller = controller;
         }
 
         @Override
@@ -110,6 +76,8 @@ public class ClientMain extends Application {
             parameter.size = 10;
             this.generator = new FreeTypeFontGenerator(Gdx.files.classpath("assets/fonts/Prototype.ttf"));
             this.font = generator.generateFont(parameter);
+
+            controller.initComponents(game);
         }
 
         @Override

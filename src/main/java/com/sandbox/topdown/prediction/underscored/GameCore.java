@@ -42,6 +42,9 @@ public class GameCore {
     public boolean naive_approach;
     public boolean client_predict;
     public boolean client_smoothing;
+    public boolean show_server_pos;
+    public boolean show_dest;
+    
     public float client_smooth;
 
     private final LinkedList<ServerUpdate> server_updates = new LinkedList<>();
@@ -58,10 +61,10 @@ public class GameCore {
     private ClientSocket socket;
     private float client_time;
     private float target_time;
-    private int net_offset;
+    public int net_offset;
     private int buffer_size;
     private float oldest_tick;
-    private long fake_lag;
+    public long fake_lag;
     public long last_ping_time;
     public long net_ping;
     private long net_latency;
