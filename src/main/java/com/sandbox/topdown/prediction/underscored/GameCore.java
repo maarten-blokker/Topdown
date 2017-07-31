@@ -20,12 +20,12 @@ import org.slf4j.LoggerFactory;
  * @author Maarten
  */
 public class GameCore {
-    
+
     private static final Logger LOG = LoggerFactory.getLogger(GameCore.class);
-    
+
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     private final float playerspeed = 120f;
-    
+
     public Player self;
     public Player other;
 
@@ -37,15 +37,15 @@ public class GameCore {
 
     //The other players ghost destination position (the lerp)
     private Player pos_other;
-    
+
     private final GameInstance instance;
     public boolean naive_approach;
     public boolean client_predict;
     public boolean client_smoothing;
     public float client_smooth;
-    
-    private LinkedList<ServerUpdate> server_updates = new LinkedList<>();
-    
+
+    private final LinkedList<ServerUpdate> server_updates = new LinkedList<>();
+
     float _pdt = 0.0001F;               //The physics update delta time
     long _pdte = System.currentTimeMillis();  //The physics update last delta time
 
@@ -54,7 +54,6 @@ public class GameCore {
     float local_time = 0.016F;          //The local timer
     long _dt = System.currentTimeMillis();    //The local timer delta
     long _dte = System.currentTimeMillis();   //The local timer last frame time
-    private ServerUpdate laststate;
     private int input_seq;
     private ClientSocket socket;
     private float client_time;
@@ -67,11 +66,11 @@ public class GameCore {
     public long net_ping;
     private long net_latency;
     private final boolean server;
-    
+
     public GameCore(GameInstance instance) {
         this.instance = instance;
         this.server = (this.instance != null);
-        
+
         initPlayers();
 
         //Start a physics loop, this is separate to the rendering
@@ -91,21 +90,20 @@ public class GameCore {
 
             //We start pinging the server to determine latency
             this.client_create_ping_timer();
-            
+
         } else { //if server
 
             this.server_time = 0;
-            this.laststate = null;
-            
+
         }
         this.executor.scheduleAtFixedRate(this::update, 0, 15, TimeUnit.MILLISECONDS);
     }
-    
+
     private void initPlayers() {
         if (instance != null) {
             this.self = new Player(this, this.instance.player_host);
             this.other = new Player(this, this.instance.player_client);
-            
+
             this.self.pos = new Vector2(20F, 20F);
         } else {
             this.self = new Player(this);
@@ -129,18 +127,22 @@ public class GameCore {
             this.server_pos_other.color = Color.LIGHT_GRAY;
             this.server_pos_other.pos = new Vector2(500F, 200F);
         }
-        
+
     }
-    
+
     public void update() {
-        //Update the game specifics
-        if (instance == null) {
-            this.client_update();
-        } else {
-            this.server_update();
+        try {
+            //Update the game specifics
+            if (instance == null) {
+                this.client_update();
+            } else {
+                this.server_update();
+            }
+        } catch (Exception e) {
+            LOG.error("Error in update loop", e);
         }
     }
-    
+
     public void client_update() {
 
         //Capture inputs from the player
@@ -151,15 +153,17 @@ public class GameCore {
         //Note that if we don't have prediction enabled - this will also
         //update the actual local client position on screen as well.
         if (!this.naive_approach) {
-            this.client_process_net_updates();
+            synchronized (this.server_updates) {
+                this.client_process_net_updates();
+            }
         }
 
         //When we are doing client side prediction, we smooth out our position
         //across frames using local input states we have stored.
         this.client_update_local_position();
-        
+
     }
-    
+
     private void client_process_net_updates() {
         //No updates...
         if (this.server_updates.isEmpty()) {
@@ -181,7 +185,7 @@ public class GameCore {
         //only when our time is not found on the timeline, since it will run all
         //samples. Usually this iterates very little before breaking out with a target.
         for (int i = 0; i < count; ++i) {
-            
+
             ServerUpdate point = this.server_updates.get(i);
             ServerUpdate next_point = this.server_updates.get(i + 1);
 
@@ -206,7 +210,7 @@ public class GameCore {
         //lerp requires the 0,1 value to lerp to? thats the one.
         if (target != null && previous != null) {
             this.target_time = target.time;
-            
+
             float difference = this.target_time - current_time;
             float max_difference = (target.time - previous.time);
             float time_point = (difference / max_difference);
@@ -238,7 +242,7 @@ public class GameCore {
             //to the target from the previous point in the server_updates buffer
             this.server_pos_other.pos = other_server_pos;
             this.pos_other.pos = this.v_lerp(other_past_pos, other_target_pos, time_point);
-            
+
             if (this.client_smoothing) {
                 this.other.pos = this.v_lerp(this.other.pos, this.pos_other.pos, this._pdt * this.client_smooth);
             } else {
@@ -268,7 +272,7 @@ public class GameCore {
             }
         }
     }
-    
+
     private void client_update_local_position() {
         if (this.client_predict) {
             //Work out the time we have since we updated the state
@@ -286,7 +290,7 @@ public class GameCore {
             this.check_collision(this.self);
         }
     }
-    
+
     public Vector2 client_handle_input() {
 
         //if(this.lit > this.local_time) return;
@@ -298,11 +302,11 @@ public class GameCore {
         boolean right = Gdx.input.isKeyPressed(Input.Keys.D);
         boolean up = Gdx.input.isKeyPressed(Input.Keys.W);
         boolean down = Gdx.input.isKeyPressed(Input.Keys.S);
-        
+
         if (!(left || right || up || down)) {
             return new Vector2();
         }
-        
+
         this.input_seq += 1;
         GameInput input = new GameInput();
         input.left = left;
@@ -311,15 +315,15 @@ public class GameCore {
         input.down = down;
         input.time = this.local_time;
         input.seq = this.input_seq;
-        
+
         this.self.inputs.add(input);
-        
+
         this.socket.send(new InputPacket(this.input_seq, this.local_time, input));
-        
+
         return getInputVector(input);
-        
+
     }
-    
+
     public void handle_server_input(PlayerClient client, GameInput input) {
         //Fetch which client this refers to out of the two
         Player player_client = (client.userid.equals(this.self.instance.userid)) ? this.self : this.other;
@@ -327,7 +331,7 @@ public class GameCore {
         //Store the input on the player instance for processing in the physics loop
         player_client.inputs.add(input);
     }
-    
+
     private Vector2 process_input(Player player) {
         //It's possible to have recieved multiple inputs by now,
         //so we process each one
@@ -340,7 +344,7 @@ public class GameCore {
                 if (input.seq <= player.last_input_seq) {
                     continue;
                 }
-                
+
                 resulting_vector = getInputVector(input);
             } //for each input command
         } //if we have inputs
@@ -351,7 +355,7 @@ public class GameCore {
             player.last_input_time = player.inputs.get(ic - 1).time;
             player.last_input_seq = player.inputs.get(ic - 1).seq;
         }
-        
+
         if (resulting_vector == null) {
             return new Vector2();
         }
@@ -359,23 +363,23 @@ public class GameCore {
         //give it back
         return resulting_vector;
     }
-    
+
     private Vector2 v_lerp(Vector2 v, Vector2 tv, float t) {
         float x = lerp(v.x, tv.x, t);
         float y = lerp(v.y, tv.y, t);
-        
+
         return new Vector2(x, y);
     }
-    
+
     private float lerp(float a, float b, float f) {
         return (a + f * (b - a));
     }
-    
+
     private Vector2 getInputVector(GameInput input) {
         if (input == null) {
             return new Vector2();
         }
-        
+
         float x_dir = 0;
         float y_dir = 0;
         if (input.left) {
@@ -390,40 +394,40 @@ public class GameCore {
         if (input.down) {
             y_dir -= 1;
         }
-        
+
         return physics_movement_vector_from_direction(x_dir, y_dir);
     }
-    
+
     private Vector2 physics_movement_vector_from_direction(float x, float y) {
         return new Vector2(
                 x * this.playerspeed * 0.015F,
                 y * this.playerspeed * 0.015F
         );
     }
-    
+
     private void server_update() {
         // Update the state of our local clock to match the timer
         this.server_time = this.local_time;
 
         // Make a snapshot of the current state, for updating the clients
-        this.laststate = new ServerUpdate();
-        this.laststate.hostPosition = this.self.pos;
-        this.laststate.clientPosition = this.other.pos;
-        this.laststate.hostInputSequence = this.self.last_input_seq;
-        this.laststate.clientInputSequence = this.other.last_input_seq;
-        this.laststate.time = this.server_time;
+        ServerUpdate laststate = new ServerUpdate();
+        laststate.hostPosition = this.self.pos;
+        laststate.clientPosition = this.other.pos;
+        laststate.hostInputSequence = this.self.last_input_seq;
+        laststate.clientInputSequence = this.other.last_input_seq;
+        laststate.time = this.server_time;
 
         //Send the snapshot to the 'host' player
         if (this.self.instance != null) {
-            this.self.instance.send(new ServerUpdatePacket(this.laststate));
+            this.self.instance.send(new ServerUpdatePacket(laststate));
         }
 
         //Send the snapshot to the 'client' player
         if (this.other.instance != null) {
-            this.other.instance.send(new ServerUpdatePacket(this.laststate));
+            this.other.instance.send(new ServerUpdatePacket(laststate));
         }
     }
-    
+
     private void create_physics_simulation() {
         executor.scheduleAtFixedRate(() -> {
             this._pdt = (float) ((System.currentTimeMillis() - this._pdte) / 1000F);
@@ -433,10 +437,10 @@ public class GameCore {
             } else {
                 this.client_update_physics();
             }
-            
+
         }, 15, 15, TimeUnit.MILLISECONDS);
     }
-    
+
     private void server_update_physics() {
         // Handle player one
         this.self.old_state.pos = this.self.pos;
@@ -451,11 +455,11 @@ public class GameCore {
         //Keep the physics position in the world
         this.check_collision(this.self);
         this.check_collision(this.other);
-        
+
         this.self.inputs.clear(); //we have cleared the input buffer, so remove this
         this.other.inputs.clear(); //we have cleared the input buffer, so remove this
     }
-    
+
     private void client_update_physics() {
         //Fetch the new direction from the input buffer,
         //and apply it to the state so we can smooth it in the visual state
@@ -467,7 +471,7 @@ public class GameCore {
             this.self.state_time = this.local_time;
         }
     }
-    
+
     public void client_onserverupdate_recieved(ServerUpdate data) {
         //Lets clarify the information we have locally. One of the players is 'hosting' and
         //the other is a joined in client, so we name these host and client for making sure
@@ -487,43 +491,52 @@ public class GameCore {
         //information to interpolate with so it misses positions, and packet loss destroys this approach
         //even more so. See 'the bouncing ball problem' on Wikipedia.
         if (this.naive_approach) {
-            if (data.hostPosition != null) {
-                player_host.pos = data.hostPosition;
-            }
-            
-            if (data.clientPosition != null) {
-                player_client.pos = data.clientPosition;
-            }
+            client_onserverupdate_recieved_naive(data, player_host, player_client);
         } else {
-            //Cache the data from the server,
-            //and then play the timeline
-            //back to the player with a small delay (net_offset), allowing
-            //interpolation between the points.
-            this.server_updates.add(data);
-
-            //we limit the buffer in seconds worth of updates
-            //60fps*buffer seconds = number of samples
-            if (this.server_updates.size() >= (60 * this.buffer_size)) {
-                this.server_updates.removeFirst();
+            synchronized (this.server_updates) {
+                client_onserverupdate_recieved_interpolated(data);
             }
-
-            //We can see when the last tick we know of happened.
-            //If client_time gets behind this due to latency, a snap occurs
-            //to the last tick. Unavoidable, and a reallly bad connection here.
-            //If that happens it might be best to drop the game after a period of time.
-            this.oldest_tick = this.server_updates.get(0).time;
-
-            //Handle the latest positions from the server
-            //and make sure to correct our local predictions, making the server have final say.
-            this.client_process_net_prediction_correction();
-            
         } //non naive
     }
-    
+
+    private void client_onserverupdate_recieved_naive(ServerUpdate data, Player player_host, Player player_client) {
+        if (data.hostPosition != null) {
+            player_host.pos = data.hostPosition;
+        }
+
+        if (data.clientPosition != null) {
+            player_client.pos = data.clientPosition;
+        }
+    }
+
+    private void client_onserverupdate_recieved_interpolated(ServerUpdate data) {
+        //Cache the data from the server,
+        //and then play the timeline
+        //back to the player with a small delay (net_offset), allowing
+        //interpolation between the points.
+        this.server_updates.add(data);
+
+        //we limit the buffer in seconds worth of updates
+        //60fps*buffer seconds = number of samples
+        if (this.server_updates.size() >= (60 * this.buffer_size)) {
+            this.server_updates.removeFirst();
+        }
+
+        //We can see when the last tick we know of happened.
+        //If client_time gets behind this due to latency, a snap occurs
+        //to the last tick. Unavoidable, and a reallly bad connection here.
+        //If that happens it might be best to drop the game after a period of time.
+        this.oldest_tick = this.server_updates.get(0).time;
+
+        //Handle the latest positions from the server
+        //and make sure to correct our local predictions, making the server have final say.
+        this.client_process_net_prediction_correction();
+    }
+
     public void client_onreadygame(float server_time) {
         Player player_host = this.self.host ? this.self : this.other;
         Player player_client = this.self.host ? this.other : this.self;
-        
+
         this.local_time = server_time + this.net_latency;
 
         //Store their info colors for clarity. server is always blue
@@ -534,9 +547,9 @@ public class GameCore {
         player_host.state = Player.State.local_pos_host;
         player_client.state = Player.State.local_pos_client;
     }
-    
+
     public void client_onconnected(String clientId) {
-        LOG.info("[CONNECTED] client id = {}", clientId);
+        LOG.info("[{}] Connected to server", clientId);
 
         //The server responded that we are now in a game,
         //this lets us store the information about ourselves and set the colors
@@ -546,24 +559,24 @@ public class GameCore {
         this.self.state = Player.State.connected;
         this.self.online = true;
     }
-    
+
     public void client_ondisconnect() {
         //When we disconnect, we don't know if the other player is
         //connected or not, and since we aren't, everything goes to offline
         this.self.color = Color.RED;
         this.self.state = Player.State.not_connected;
         this.self.online = false;
-        
+
         this.other.color = Color.RED;
         this.other.state = Player.State.not_connected;
     }
-    
+
     private void client_connect_to_server() {
         this.socket = new ClientSocket(this);
         this.self.state = Player.State.connecting;
         this.socket.connect();
     }
-    
+
     private void client_process_net_prediction_correction() {
         if (this.server_updates.isEmpty()) {
             //No updates...
@@ -607,16 +620,17 @@ public class GameCore {
                 //The player is now located at the new server position, authoritive server
                 this.self.cur_state.pos = my_server_pos;
                 this.self.last_input_seq = lastinputseq_index;
+                
                 //Now we reapply all the inputs that we have locally that
                 //the server hasn't yet confirmed. This will 'keep' our position the same,
                 //but also confirm the server position at the same time.
                 this.client_update_physics();
                 this.client_update_local_position();
-                
+
             }
         }
     }
-    
+
     private void check_collision(Player item) {
         //Left wall.
         if (item.pos.x <= 0) {
@@ -638,7 +652,7 @@ public class GameCore {
             item.pos.y = Game.VIEW_HEIGHT;
         }
     }
-    
+
     private void create_timer() {
         this.executor.scheduleAtFixedRate(() -> {
             this._dt = System.currentTimeMillis() - this._dte;
@@ -646,29 +660,28 @@ public class GameCore {
             this.local_time += this._dt / 1000.0;
         }, 4, 4, TimeUnit.MILLISECONDS);
     }
-    
+
     private void client_create_ping_timer() {
         this.executor.scheduleAtFixedRate(() -> {
             this.last_ping_time = System.currentTimeMillis() - this.fake_lag;
             this.socket.send(new PingPacket(this.last_ping_time));
         }, 0, 1000, TimeUnit.MILLISECONDS);
     }
-    
+
     public void client_onping(long pingTime) {
         this.net_ping = System.currentTimeMillis() - pingTime;
         this.net_latency = this.net_ping / 2;
     }
-    
+
     private Vector2 v_add(Vector2 a, Vector2 b) {
         return a.add(b);
     }
-    
+
     public void client_onhostgame(float server_time) {
         LOG.info("[{}] I am now host", self.id);
-        
+
         //The server sends the time when asking us to host, but it should be a new game.
         //so the value will be really small anyway (15 or 16ms)
-
         //Get an estimate of the current time on the server
         this.local_time = server_time + this.net_latency;
 
@@ -682,7 +695,7 @@ public class GameCore {
         //Make sure we start in the correct place as the host.
         this.client_reset_positions();
     }
-    
+
     public void client_onjoingame(float time) {
         LOG.info("[{}] I joined a game", self.id);
         //We are not the host
@@ -695,7 +708,7 @@ public class GameCore {
         //Make sure the positions match servers and other clients
         this.client_reset_positions();
     }
-    
+
     private void client_reset_positions() {
         Player player_host = this.self.host ? this.self : this.other;
         Player player_client = this.self.host ? this.other : this.self;
@@ -711,17 +724,17 @@ public class GameCore {
 
         //Position all debug view items to their owners position
         this.server_pos_self.pos = this.self.pos;
-        
+
         this.server_pos_other.pos = this.other.pos;
         this.pos_other.pos = this.other.pos;
     }
-    
+
     public void stop_update() {
         this.executor.shutdownNow();
     }
-    
+
     private void client_create_configuration() {
-        this.naive_approach = false;        //Whether or not to use the naive approach
+        this.naive_approach = true;        //Whether or not to use the naive approach
 
         this.client_predict = true;         //Whether or not the client is predicting input
         this.input_seq = 0;                 //When predicting client inputs, we store the last input as a sequence number
@@ -741,5 +754,5 @@ public class GameCore {
         this.client_time = 0.01F;            //Our local 'clock' based on server time - client interpolation(net_offset).
         this.server_time = 0.01F;            //The time the server reported it was at, last we heard from it
     }
-    
+
 }
